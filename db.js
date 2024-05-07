@@ -47,4 +47,63 @@ function crearTarea({tarea}){
     });
 }
 
-module.exports = {leerTareas,crearTarea};
+function borrarTarea(id){
+    return new Promise(async (ok,ko) => {
+        try{
+            const conexion = conectar();
+
+            let {count} = await conexion`DELETE FROM tareas WHERE id = ${id} `;
+
+            conexion.end();
+
+            ok(count);
+
+        }catch(error){
+            ko({ error : "error en el servidor" });
+        }
+    });
+}
+
+function toggleEstado(id){
+    return new Promise(async (ok,ko) => {
+        try{
+            const conexion = conectar();
+
+            let {count} = await conexion`UPDATE tareas SET terminada = NOT terminada WHERE id = ${id} `;
+
+            conexion.end();
+
+            ok(count);
+
+        }catch(error){
+            ko({ error : "error en el servidor" });
+        }
+    });
+}
+
+function editarTexto(id,tarea){
+    return new Promise(async (ok,ko) => {
+        try{
+            const conexion = conectar();
+
+            let {count} = await conexion`UPDATE tareas SET tarea = ${tarea} WHERE id = ${id} `;
+
+            conexion.end();
+
+            ok(count);
+
+        }catch(error){
+            ko({ error : "error en el servidor" });
+        }
+    });
+}
+
+/*
+//Enseña por terminal si funciona o no la funcion que quiera
+//Hay que comentar module.exports
+editarTexto(2, "integrar front y back")
+.then(x => console.log(x))
+.catch(x => console.log(x));
+*/
+
+module.exports = {leerTareas,crearTarea,borrarTarea,toggleEstado,editarTexto};

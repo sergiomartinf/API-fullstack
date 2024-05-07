@@ -3,7 +3,7 @@ require("dotenv").config();
 
 const express = require("express");
 const {json} = require("body-parser");
-const {leerTareas,crearTarea} = require("./db");
+const {leerTareas,crearTarea,borrarTarea,toggleEstado,editarTexto} = require("./db");
 
 const servidor = express();
 
@@ -46,8 +46,17 @@ servidor.post("/tareas/nueva", async (peticion,respuesta,siguiente) => {
 });
 
 // Middleware DELETE
-servidor.delete("/tareas/borrar:id", async (peticion,respuesta) => {
-    respuesta.send(`Borraremos la tarea con el ID: ${peticion.params.id}`);
+// :id([0,9]+) es para que borre un numero (no vale string)
+servidor.delete("/tareas/borrar/:id([0-9]+)", async (peticion,respuesta) => {
+    try {
+        let count = await borrarTarea(peticion.params.id);
+
+        respuesta.json({ resultado : count ? "ok" : "ko" });
+        
+    } catch (error) {
+        respuesta.status(500);
+        respuesta.json(error);
+    }
 });
 
 // Middleware ERROR 404 (not found)

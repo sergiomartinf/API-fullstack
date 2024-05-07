@@ -25,11 +25,26 @@ function leerTareas(){
             ok(tareas);
 
         }catch(error){
-
             ko({ error : "error en el servidor" });
-
         }
     });
 }
 
-module.exports = {leerTareas};
+function crearTarea({tarea}){
+    return new Promise(async (ok,ko) => {
+        try{
+            const conexion = conectar();
+
+            let [{id}] = await conexion`INSERT INTO tareas (tarea) VALUES (${tarea}) RETURNING id`;
+
+            conexion.end();
+
+            ok(id);
+
+        }catch(error){
+            ko({ error : "error en el servidor" });
+        }
+    });
+}
+
+module.exports = {leerTareas,crearTarea};

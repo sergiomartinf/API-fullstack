@@ -3,9 +3,12 @@ require("dotenv").config();
 
 const express = require("express");
 const {json} = require("body-parser");
+const cors = require("cors");
 const {leerTareas,crearTarea,borrarTarea,toggleEstado,editarTexto} = require("./db");
 
 const servidor = express();
+
+servidor.use(cors());
 
 servidor.use(json());
 
@@ -43,6 +46,28 @@ servidor.post("/tareas/nueva", async (peticion,respuesta,siguiente) => {
         respuesta.status(500);
         respuesta.json(error);
     }
+});
+
+// Middleware PUT para actualizar una tarea pasando id
+servidor.put("/tareas/actualizar/:id([0-9]+)/:operacion(1|2)", async (peticion,respuesta,siguiente) => {
+    let operacion = Number(peticion.params.operacion);
+    let funciones = [editarTexto,toggleEstado];
+
+    if(operacion == 1 && (!peticion.body.tarea || peticion.body.tarea.trim() == "")){
+        return siguiente(true);
+    }
+
+    try {
+        let count = await funciones [operacion - 1](peticion.param.id, operacion == 1 ? peticion.doby.tarea : null);
+
+        respuesta.json({ resultado : count ? "ok" : "ko" });
+
+    } catch (error) {
+        respuesta.status(500);
+        respuesta.json(error);
+    }
+
+    respuesta.send(`operacion --> ${operacion}`);
 });
 
 // Middleware DELETE

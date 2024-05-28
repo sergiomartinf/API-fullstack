@@ -49,7 +49,7 @@ servidor.post("/tareas/nueva", async (peticion,respuesta,siguiente) => {
 });
 
 // Middleware PUT para actualizar una tarea pasando id
-servidor.put("/tareas/actualizar/:id([0-9]+)/:operacion(1|2)", async (peticion,respuesta,siguiente) => {
+servidor.put("/tareas/actualizar/:id([0-9a-f]{24})/:operacion(1|2)", async (peticion,respuesta,siguiente) => {
     let operacion = Number(peticion.params.operacion);
     let funciones = [editarTexto,toggleEstado];
 

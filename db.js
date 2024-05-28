@@ -1,26 +1,19 @@
 //configurar solo dotenv para el archivo .env
 require("dotenv").config();
+const { MongoClient, ObjectId } = require("mongodb");
 
-const postgres = require("postgres");
-
-//FUNCIONES PARA LOS MIDDLEWARES
 function conectar(){
-    return postgres({
-        host : process.env.DB_HOST,
-        database : process.env.DB_NAME,
-        user : process.env.DB_USER,
-        password : process.env.DB_PASSWORD
-    });
+    return MongoClient.connect(process.env.URL_MONGO);
 }
 
 function leerTareas(){
     return new Promise(async (ok,ko) => {
         try{
-            const conexion = conectar();
+            const conexion = await conectar();
 
-            let tareas = await conexion`SELECT * FROM tareas`;
+            let tareas = await conexion.db("tareas").collection("tareas").find({}).toArray();
 
-            conexion.end();
+            conexion.close();
 
             ok(tareas);
 
@@ -33,13 +26,13 @@ function leerTareas(){
 function crearTarea({tarea}){
     return new Promise(async (ok,ko) => {
         try{
-            const conexion = conectar();
+            const conexion = await conectar();
 
-            let [{id}] = await conexion`INSERT INTO tareas (tarea) VALUES (${tarea}) RETURNING id`;
+            let [{insertedId}] = await conexion.db("tareas").collection("tareas").insertOne({tarea});
 
-            conexion.end();
+            conexion.close();
 
-            ok(id);
+            ok(insertedId);
 
         }catch(error){
             ko({ error : "error en el servidor" });
@@ -47,16 +40,16 @@ function crearTarea({tarea}){
     });
 }
 
-function borrarTarea(id){
+function borrarTarea({id}){
     return new Promise(async (ok,ko) => {
         try{
-            const conexion = conectar();
+            const conexion = await conectar();
 
-            let {count} = await conexion`DELETE FROM tareas WHERE id = ${id} `;
+            let {deletedCount} = await conexion.db("tareas").collection("tareas").deleteOne( { _id : new ObjectId(id) });
 
-            conexion.end();
+            conexion.close();
 
-            ok(count);
+            ok(deletedCount);
 
         }catch(error){
             ko({ error : "error en el servidor" });
@@ -67,16 +60,19 @@ function borrarTarea(id){
 function toggleEstado(id){
     return new Promise(async (ok,ko) => {
         try{
-            const conexion = conectar();
+            const conexion = await conectar();
 
-            let {count} = await conexion`UPDATE tareas SET terminada = NOT terminada WHERE id = ${id} `;
+            let {terminada} = await conexion.db("tareas").collection("tareas").findOne({ _id : new ObjectId(id) });
 
-            conexion.end();
+            let {modifiedCount} = await conexion.db("tareas").collection("tareas").updateOne({ _id : new ObjectId(id) }, { $set : { tarea : tarea }});
 
-            ok(count);
+            conexion.close();
+
+            ok(modifiedCount);
 
         }catch(error){
-            ko({ error : "error en el servidor" });
+            //ko({ error : "error en el servidor" });
+            console.log(error);
         }
     });
 }
@@ -84,9 +80,9 @@ function toggleEstado(id){
 function editarTexto(id,tarea){
     return new Promise(async (ok,ko) => {
         try{
-            const conexion = conectar();
+            const conexion = await conectar();
 
-            let {count} = await conexion`UPDATE tareas SET tarea = ${tarea} WHERE id = ${id} `;
+            let {count} = await conexion.db("tareas").collection("tareas");
 
             conexion.end();
 
@@ -101,7 +97,7 @@ function editarTexto(id,tarea){
 /*
 //Enseña por terminal si funciona o no la funcion que quiera
 //Hay que comentar module.exports
-editarTexto(2, "integrar front y back")
+crearTarea("Hace la compra")
 .then(x => console.log(x))
 .catch(x => console.log(x));
 */

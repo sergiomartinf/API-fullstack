@@ -1,12 +1,12 @@
-//configurar solo dotenv para el archivo .env
 require("dotenv").config();
-const { MongoClient, ObjectId } = require("mongodb");
+
+const { MongoClient,ObjectId } = require("mongodb");
 
 function conectar(){
     return MongoClient.connect(process.env.URL_MONGO);
 }
 
-function leerTareas(){
+function tareas(){
     return new Promise(async (ok,ko) => {
         try{
             const conexion = await conectar();
@@ -15,44 +15,52 @@ function leerTareas(){
 
             conexion.close();
 
-            ok(tareas);
+            ok(tareas.map( ({_id,tarea,terminada}) => {
+                return {id:_id,tarea,terminada};
+            }));
 
         }catch(error){
+
             ko({ error : "error en el servidor" });
+
         }
     });
 }
 
-function crearTarea({tarea}){
+function crearTarea(tarea){
     return new Promise(async (ok,ko) => {
         try{
             const conexion = await conectar();
 
-            let [{insertedId}] = await conexion.db("tareas").collection("tareas").insertOne({tarea});
+            let {insertedId} = await conexion.db("tareas").collection("tareas").insertOne({tarea,terminada : false});
 
             conexion.close();
 
             ok(insertedId);
 
         }catch(error){
+
             ko({ error : "error en el servidor" });
+
         }
     });
 }
 
-function borrarTarea({id}){
+function borrarTarea(id){
     return new Promise(async (ok,ko) => {
         try{
             const conexion = await conectar();
 
-            let {deletedCount} = await conexion.db("tareas").collection("tareas").deleteOne( { _id : new ObjectId(id) });
+            let {deletedCount} = await conexion.db("tareas").collection("tareas").deleteOne({ _id : new ObjectId(id) });
 
             conexion.close();
 
             ok(deletedCount);
 
         }catch(error){
+
             ko({ error : "error en el servidor" });
+
         }
     });
 }
@@ -64,15 +72,16 @@ function toggleEstado(id){
 
             let {terminada} = await conexion.db("tareas").collection("tareas").findOne({ _id : new ObjectId(id) });
 
-            let {modifiedCount} = await conexion.db("tareas").collection("tareas").updateOne({ _id : new ObjectId(id) }, { $set : { tarea : tarea }});
+            
+            let {modifiedCount} = await conexion.db("tareas").collection("tareas").updateOne({ _id : new ObjectId(id) }, { $set : { terminada : !terminada }});
 
             conexion.close();
 
             ok(modifiedCount);
 
         }catch(error){
-            //ko({ error : "error en el servidor" });
-            console.log(error);
+
+            ko({ error : "error en el servidor" });
         }
     });
 }
@@ -82,24 +91,18 @@ function editarTexto(id,tarea){
         try{
             const conexion = await conectar();
 
-            let {count} = await conexion.db("tareas").collection("tareas");
+            let {modifiedCount} = await conexion.db("tareas").collection("tareas").updateOne({ _id : new ObjectId(id) }, { $set : { tarea : tarea }});
 
-            conexion.end();
+            conexion.close();
 
-            ok(count);
+            ok(modifiedCount);
 
         }catch(error){
+
             ko({ error : "error en el servidor" });
+
         }
     });
 }
 
-/*
-//Enseña por terminal si funciona o no la funcion que quiera
-//Hay que comentar module.exports
-crearTarea("Hace la compra")
-.then(x => console.log(x))
-.catch(x => console.log(x));
-*/
-
-module.exports = {leerTareas,crearTarea,borrarTarea,toggleEstado,editarTexto};
+module.exports = {tareas,crearTarea,borrarTarea,toggleEstado,editarTexto};
